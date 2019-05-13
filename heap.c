@@ -21,7 +21,6 @@
 	  uint16_t total;
 	  uint16_t writeIndex;
 	  uint16_t * readings;
-	  uint8_t filled;
 	} MA_Filter;
 
 	
@@ -32,11 +31,11 @@
 		//unless it's the last element or overflow, then start from beginning
 		uint16_t * WritePtr;
 		uint16_t old;
-		
+
 		if(Filter == NULL)
 			return MA_FILTER_FILTER_WAS_NULLPTR;
 
-		if(Filter->writeIndex == NULL)
+		if(Filter->readings == NULL)
 			return MA_FILTER_FILTER_READINGS_WAS_NULLPTR;
 
 		if(Filter->writeIndex < Filter->points)
@@ -47,27 +46,19 @@
 		{
 			WritePtr = Filter->readings;
 			Filter->writeIndex = 0;
-			Filter->filled = 1;
 		}
 
 		uint16_t sum;
 
 		//assign value to the location pointed at
 		old = (*WritePtr);
-		(*WritePtr) = input;
+		if (old < sum)
+			(*WritePtr) = input;
 
 		//.. do math
 		// (*output) = sum(readings, 0 , points) / points
+		sum = (Filter->total + input - old);
 
-		if (Filter->filled == 0)
-		{
-			sum = (Filter->total + input);
-		}
-
-		else
-		{
-			sum = (Filter->total + input - old);
-		}
 		Filter->total = sum;
 		(*output) = (sum * 10) / Filter->points;
 
@@ -83,7 +74,7 @@
 		Filter->readings = (uint16_t*) malloc( points * sizeof(uint16_t) );
 		Filter->points = points;
 		Filter->total = 0;
-		Filter->filled = 0;
+		memset(Filter->readings, 0, Filter->points * sizeof(uint16_t));
 		Filter->writeIndex = 0;
 
 		return Filter;
